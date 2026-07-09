@@ -25,6 +25,8 @@ archives:
       - README.md
       - LICENSE
       - docs/*
+      - start-macos.command
+      - start-windows.bat
 
 checksum:
   name_template: checksums.txt

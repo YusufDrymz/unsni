@@ -32,6 +32,15 @@ go install github.com/YusufDrymz/unsni/cmd/unsni@latest
 
 ## Quick start
 
+**Not technical?** Download a release from
+[Releases](https://github.com/YusufDrymz/unsni/releases/latest), unzip, and
+double-click **`start-macos.command`** (macOS) or **`start-windows.bat`**
+(Windows). It turns on the system proxy; close the window when you're done and
+your settings revert. (First run on macOS: right-click → Open to get past
+Gatekeeper.)
+
+For the CLI:
+
 ```bash
 # 1. Find a working strategy for a blocked host
 unsni find discord.com
