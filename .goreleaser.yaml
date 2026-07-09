@@ -27,6 +27,7 @@ archives:
       - LICENSE
       - docs/*
       - start-macos.command
+      - start-macos-full.command
       - start-windows.bat
 
 checksum:
