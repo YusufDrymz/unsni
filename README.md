@@ -30,16 +30,28 @@ Pure Go, single binary, **no cgo**, cross-platform.
 go install github.com/YusufDrymz/unsni/cmd/unsni@latest
 ```
 
-## Quick start
+## Easy install (no terminal)
 
-**Not technical?** Download a release from
-[Releases](https://github.com/YusufDrymz/unsni/releases/latest), unzip, and
-double-click **`start-macos.command`** (macOS) or **`start-windows.bat`**
-(Windows). It turns on the system proxy; close the window when you're done and
-your settings revert. (First run on macOS: right-click → Open to get past
-Gatekeeper.)
+1. Download the file for your system from
+   [Releases](https://github.com/YusufDrymz/unsni/releases/latest):
+   `unsni_..._darwin_arm64.tar.gz` (Apple Silicon Mac), `..._darwin_amd64` (Intel
+   Mac), or `..._windows_amd64.zip` (Windows).
+2. Unzip it. Inside you'll see:
 
-For the CLI:
+   | file | what it is |
+   |------|------------|
+   | **`start-macos.command`** / **`start-windows.bat`** | **← double-click THIS to run** |
+   | `unsni` / `unsni.exe` | the program itself (don't double-click — it just prints help) |
+   | `README.md`, `docs/`, `LICENSE` | docs |
+
+3. Double-click the launcher for your OS. It turns the system proxy on; open
+   Discord / your browser and use it normally. **Close the window when done** and
+   your settings revert automatically.
+
+> macOS first run: if it says "cannot verify developer", **right-click the
+> launcher → Open** once. It runs with no admin needed.
+
+## Quick start (CLI)
 
 ```bash
 # 1. Find a working strategy for a blocked host
