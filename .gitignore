@@ -1,0 +1,14 @@
+# Binaries
+/unsni
+/dist/
+*.exe
+*.out
+
+# Go
+*.test
+coverage.txt
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
