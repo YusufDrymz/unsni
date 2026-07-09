@@ -22,6 +22,7 @@ import (
 	"github.com/YusufDrymz/unsni/internal/proxy"
 	"github.com/YusufDrymz/unsni/internal/rule"
 	"github.com/YusufDrymz/unsni/internal/sysproxy"
+	"github.com/YusufDrymz/unsni/internal/tunnel"
 	"github.com/YusufDrymz/unsni/internal/warp"
 )
 
@@ -43,6 +44,8 @@ func main() {
 		cmdDoctor(os.Args[2:])
 	case "warp":
 		cmdWarp(os.Args[2:])
+	case "tunnel":
+		cmdTunnel(os.Args[2:])
 	case "strategies":
 		cmdStrategies()
 	case "version", "-v", "--version":
@@ -61,6 +64,7 @@ usage:
   unsni find <host> [--doh url] [--timeout d]
   unsni doctor <host> [--doh url] [--timeout d]
   unsni warp [--out file] [--allowed-ips list]
+  unsni tunnel                       (needs sudo; full WARP tunnel — fixes desktop apps + voice)
   unsni strategies
   unsni version
 `)
@@ -227,6 +231,36 @@ func cmdWarp(args []string) {
 	fmt.Printf("Wrote %s\n", *out)
 	fmt.Printf("Bring the tunnel up to carry UDP/voice:\n  wg-quick up %s\n", disp)
 	fmt.Printf("(or import it into the WireGuard app). Take it down with: wg-quick down %s\n", disp)
+}
+
+func cmdTunnel(args []string) {
+	fs := flag.NewFlagSet("tunnel", flag.ExitOnError)
+	_ = fs.Parse(args)
+
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	logger.Info("registering an anonymous WARP account ...")
+	acc, err := warp.Register(context.Background())
+	if err != nil {
+		fatal(err)
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+	defer stop()
+
+	down, err := tunnel.Up(acc, func(m string) { logger.Info(m) })
+	if err != nil {
+		fatal(err)
+	}
+	fmt.Fprintln(os.Stderr, "\nTunnel is UP — all traffic goes through WARP.")
+	fmt.Fprintln(os.Stderr, "Open Discord (desktop or browser); voice works too. Press Ctrl+C (or close this window) to stop.")
+
+	<-ctx.Done()
+	logger.Info("stopping tunnel, restoring routes/DNS ...")
+	if err := down(); err != nil {
+		logger.Error("teardown had errors — if the network is off, disconnect/reconnect Wi-Fi", "err", err)
+	} else {
+		logger.Info("tunnel down, connectivity restored")
+	}
 }
 
 func cmdStrategies() {
