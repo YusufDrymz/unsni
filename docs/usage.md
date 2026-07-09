@@ -94,15 +94,26 @@ Lookup order per connection: rules file → `--auto` discovery → `--strategy` 
 `seg` (TCP segment split); `at` = `sni` (split inside the SNI) or `fixed:<n>`.
 See `unsni strategies` for the built-ins.
 
-## Voice / UDP (WARP)
+## Voice / UDP + desktop apps (full tunnel)
 
-A userspace proxy cannot carry Discord **voice** (direct UDP). `unsni warp`
-registers an anonymous Cloudflare WARP account and writes a WireGuard config;
-run that tunnel to carry UDP/voice:
+A proxy cannot carry Discord **voice** (direct UDP) or fix the **desktop app**
+(its updater ignores proxies). Both need a network-layer tunnel.
+
+**Easiest — built-in tunnel (no WireGuard install needed):**
+
+```bash
+sudo unsni tunnel     # embeds wireguard-go, connects to WARP, routes everything
+# open Discord (desktop or browser); voice works. Ctrl+C / close window to stop.
+```
+
+It asks for your password (routing needs admin) and restores routes/DNS on exit.
+The default route is never deleted, so even a crash self-heals connectivity.
+
+**Alternative — generate a config and run it with WireGuard yourself:**
 
 ```bash
 unsni warp --out warp.conf
-wg-quick up ./warp.conf     # needs WireGuard installed
+wg-quick up ./warp.conf     # needs WireGuard installed (brew install wireguard-tools)
 # ... voice works while the tunnel is up ...
 wg-quick down ./warp.conf
 ```

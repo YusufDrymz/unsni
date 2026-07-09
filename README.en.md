@@ -38,20 +38,24 @@ go install github.com/YusufDrymz/unsni/cmd/unsni@latest
    [Releases](https://github.com/YusufDrymz/unsni/releases/latest):
    `unsni_..._darwin_arm64.tar.gz` (Apple Silicon Mac), `..._darwin_amd64` (Intel
    Mac), or `..._windows_amd64.zip` (Windows).
-2. Unzip it. Inside you'll see:
+2. Unzip it. There are two modes — which file you double-click depends on what you need:
 
-   | file | what it is |
-   |------|------------|
-   | **`start-macos.command`** / **`start-windows.bat`** | **← double-click THIS to run** |
-   | `unsni` / `unsni.exe` | the program itself (don't double-click — it just prints help) |
-   | `README.md`, `docs/`, `LICENSE` | docs |
+   | file | mode | fixes |
+   |------|------|-------|
+   | **`start-macos.command`** (Win: `start-windows.bat`) | Light (no admin) | Browser Discord + blocked sites |
+   | **`start-macos-full.command`** | Full tunnel (asks for your Mac password) | **Discord desktop app + voice**, everything |
+   | `unsni` / `unsni.exe` | — | the program itself (don't double-click — just prints help) |
 
-3. Double-click the launcher for your OS. It turns the system proxy on; open
-   Discord / your browser and use it normally. **Close the window when done** and
-   your settings revert automatically.
+3. Double-click the one you need:
+   - **Browser is enough** → `start-macos.command`. Turns the system proxy on; use Discord in your
+     browser. Close the window to revert. No admin.
+   - **Desktop app or voice** → `start-macos-full.command`. Asks for your Mac password (to route all
+     traffic through the WARP tunnel), then the Discord app + voice work. Keep the window open; closing
+     it drops the tunnel and restores normal networking.
 
-> macOS first run: if it says "cannot verify developer", **right-click the
-> launcher → Open** once. It runs with no admin needed.
+> macOS first run: if it says "cannot verify developer", right-click the launcher → Open once.
+> Why does full mode need a password? Traffic from apps that ignore proxies (Discord's updater,
+> voice/UDP) can only be captured by a network-layer tunnel, which needs admin — like every VPN.
 
 ## Quick start (CLI)
 

@@ -94,14 +94,26 @@ Bağlantı başına sıra: kural dosyası → `--auto` keşfi → `--strategy` v
 `seg` (TCP segment split); `at` = `sni` (SNI içinde böl) veya `fixed:<n>`.
 Yerleşikler için `unsni strategies`.
 
-## Ses / UDP (WARP)
+## Ses / UDP + masaüstü uygulamaları (tam tünel)
 
-Userspace proxy Discord **sesini** (doğrudan UDP) taşıyamaz. `unsni warp`
-anonim bir Cloudflare WARP hesabı açıp WireGuard config yazar; o tüneli çalıştır:
+Proxy Discord **sesini** (doğrudan UDP) taşıyamaz ve **masaüstü uygulamasını**
+düzeltemez (updater proxy'yi yok sayar). İkisi de ağ katmanında tünel ister.
+
+**En kolayı — gömülü tünel (WireGuard kurmaya gerek yok):**
+
+```bash
+sudo unsni tunnel     # wireguard-go gömülü, WARP'a bağlanır, tüm trafiği geçirir
+# Discord'u (masaüstü veya tarayıcı) aç; ses çalışır. Ctrl+C / pencereyi kapat.
+```
+
+Şifre ister (route değişikliği admin gerektirir), çıkışta route/DNS'i geri alır.
+Default route asla silinmez, bu yüzden çökme durumunda bile bağlantı kendini toparlar.
+
+**Alternatif — config üretip WireGuard ile kendin çalıştır:**
 
 ```bash
 unsni warp --out warp.conf
-wg-quick up ./warp.conf     # WireGuard kurulu olmalı
+wg-quick up ./warp.conf     # WireGuard kurulu olmalı (brew install wireguard-tools)
 # ... tünel açıkken ses çalışır ...
 wg-quick down ./warp.conf
 ```

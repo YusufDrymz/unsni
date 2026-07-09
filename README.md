@@ -32,20 +32,24 @@ Saf Go, tek binary, **cgo yok**, cross-platform.
 1. [Releases](https://github.com/YusufDrymz/unsni/releases/latest) sayfasından
    sistemine uygun dosyayı indir: `unsni_..._darwin_arm64.tar.gz` (Apple Silicon
    Mac), `..._darwin_amd64` (Intel Mac), veya `..._windows_amd64.zip` (Windows).
-2. Çıkar. İçinde şunları görürsün:
+2. Çıkar. İki mod var, çift tıklayacağın dosya buna göre değişir:
 
-   | dosya | ne |
-   |-------|-----|
-   | **`start-macos.command`** / **`start-windows.bat`** | **← çalıştırmak için BUNA çift tıkla** |
-   | `unsni` / `unsni.exe` | programın kendisi (çift tıklama; sadece yardım basar) |
-   | `README.md`, `docs/`, `LICENSE` | belgeler |
+   | dosya | mod | ne çözer |
+   |-------|-----|----------|
+   | **`start-macos.command`** (Win: `start-windows.bat`) | Hafif (admin gerekmez) | Tarayıcı Discord + engelli siteler |
+   | **`start-macos-full.command`** | Tam tünel (Mac şifresi ister) | **Discord masaüstü uygulaması + ses** dahil her şey |
+   | `unsni` / `unsni.exe` | — | programın kendisi (çift tıklama; sadece yardım basar) |
 
-3. Sistemine uygun launcher'a çift tıkla. Sistem proxy'sini açar; Discord'u /
-   tarayıcını normal kullan. **İşin bitince pencereyi kapat**, ayarların otomatik
-   geri döner.
+3. İhtiyacına göre çift tıkla:
+   - **Sadece tarayıcıda yazışma yetiyorsa** → `start-macos.command`. Sistem proxy'sini açar,
+     Discord'u tarayıcıda kullan. Pencereyi kapatınca ayarlar geri döner. Admin gerekmez.
+   - **Masaüstü uygulaması veya ses istiyorsan** → `start-macos-full.command`. Mac şifreni ister
+     (tüm trafiği WARP tünelinden geçirmek için), sonra Discord uygulaması + ses çalışır.
+     Pencereyi açık tut; kapatınca tünel kapanır ve internet normale döner.
 
-> macOS ilk açılış: "geliştirici doğrulanamadı" derse launcher'a **sağ tık → Aç**
-> de (bir kez). Admin gerekmez.
+> macOS ilk açılış: "geliştirici doğrulanamadı" derse launcher'a **sağ tık → Aç** de (bir kez).
+> Tam tünel neden şifre ister? Uygulamaların (Discord updater'ı, ses/UDP) proxy'yi yok sayan
+> trafiğini yakalamanın tek yolu ağ katmanında tünel; o da admin ister — her VPN gibi.
 
 ## Hızlı başlangıç (CLI)
 
