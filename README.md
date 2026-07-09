@@ -1,5 +1,7 @@
 # unsni
 
+**English** · [Türkçe](README.tr.md)
+
 > Cross-platform DPI bypass engine in Go — with an **automatic strategy finder**
 > and **real observability**. Neutralize SNI-based censorship (blocked sites,
 > Discord login/chat) without editing kernel rules by hand.
@@ -116,24 +118,3 @@ make cross   # cross-compile smoke check (linux/windows/darwin, cgo off)
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
----
-
-<details>
-<summary>🇹🇷 Türkçe özet</summary>
-
-`unsni`, DPI tabanlı sansürü aşan tek binary, cross-platform bir Go aracıdır.
-Farkı: **otomatik strateji bulucu** ve **gerçek observability**.
-
-- `unsni find discord.com` — ISP'nde çalışan en hızlı desync stratejisini bulur.
-- `unsni doctor discord.com` — bir sitenin **neden** engelli olduğunu (SNI-block?
-  DNS poisoning?) teşhis eder.
-- `unsni run` — stratejiyi uygulayan yerel proxy'yi başlatır, `/metrics` ile ölçülür.
-
-**Kapsam:** Faz 1 userspace proxy'dir; HTTPS/TLS (TCP) trafiğini, yani site
-erişimini ve Discord **giriş + yazışma**sını çözer (Discord'u
-`--proxy-server=http://127.0.0.1:8080` ile başlat). **Discord sesli (UDP) henüz
-desteklenmiyor** — userspace proxy Discord'un doğrudan UDP trafiğini göremez. Ses,
-Faz 2'de (gömülü WireGuard tüneli / transparent capture) gelecek. Yanlış vaat yok.
-
-</details>
