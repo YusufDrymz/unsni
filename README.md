@@ -1,0 +1,118 @@
+# unsni
+
+> Cross-platform DPI bypass engine in Go — with an **automatic strategy finder**
+> and **real observability**. Neutralize SNI-based censorship (blocked sites,
+> Discord login/chat) without editing kernel rules by hand.
+
+[![CI](https://github.com/YusufDrymz/unsni/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufDrymz/unsni/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+## Why
+
+Most DPI-bypass tools (SpoofDPI, byedpi, zapret) either hard-code a single
+desync trick or make you run a cryptic `blockcheck` and copy-paste parameters
+by hand — with zero insight into *why* a site is blocked or *which* trick worked.
+
+`unsni` fills that gap:
+
+- **`unsni find <host>`** probes the strategy space against your ISP and prints
+  the fastest working desync strategy — zero config.
+- **`unsni doctor <host>`** tells you *why* a connection fails (SNI-based block?
+  DNS poisoning?) and which strategy fixes it.
+- **`unsni run`** starts a local proxy that applies the strategy, with a
+  Prometheus `/metrics` endpoint for real monitoring.
+
+Pure Go, single binary, **no cgo**, cross-platform.
+
+## Install
+
+```bash
+go install github.com/YusufDrymz/unsni/cmd/unsni@latest
+```
+
+## Quick start
+
+```bash
+# 1. Find a working strategy for a blocked host
+unsni find discord.com
+# -> best: record:sni (handshake in 84ms)
+
+# 2. Run the local proxy (HTTP CONNECT + optional SOCKS5, per-domain rules, auto-discovery)
+unsni run --strategy record:sni --socks 127.0.0.1:1080 --rules rules.txt --auto
+
+# 3. Point your traffic at it. On macOS the system proxy is most reliable:
+#    networksetup -setsecurewebproxy "Wi-Fi" 127.0.0.1 8080
+#    networksetup -setwebproxy       "Wi-Fi" 127.0.0.1 8080
+#    (revert with ...state off when done — see docs/usage.md)
+```
+
+For **Discord voice (UDP)**, which no proxy can carry, generate a WireGuard/WARP tunnel:
+
+```bash
+unsni warp --out warp.conf && wg-quick up ./warp.conf
+```
+
+Full guide: [`docs/usage.md`](docs/usage.md) · Türkçe: [`docs/usage.tr.md`](docs/usage.tr.md)
+
+Diagnose a block:
+
+```bash
+unsni doctor discord.com
+# baseline (no desync): FAILED at TLS handshake  -> SNI-based block confirmed
+# record:sni          : OK (84ms)
+# seg:sni             : OK (91ms)
+# seg:fixed:1         : FAILED
+```
+
+## Strategies
+
+`mode:at[:off]` — `mode` is `record` (RFC-compliant TLS record fragmentation) or
+`seg` (TCP segment split); `at` is `sni` (split inside the SNI hostname) or
+`fixed:<n>` (fixed payload offset).
+
+```bash
+unsni strategies   # list the built-ins
+```
+
+## Scope (read this)
+
+The **proxy** handles **HTTPS/TLS (TCP)** — website access and Discord
+**login + chat + gateway**. This is verified against real Turkish DPI.
+
+**Discord voice is UDP**, which a proxy cannot carry. For voice, `unsni warp`
+generates a WireGuard/WARP tunnel you run alongside the proxy — the proxy desyncs
+TCP, the tunnel carries UDP. A built-in transparent-capture tunnel (no external
+WireGuard) is future work. No false promises: voice needs the WARP tunnel running.
+
+## Development
+
+```bash
+make test    # go test -race ./...
+make vet
+make cross   # cross-compile smoke check (linux/windows/darwin, cgo off)
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+---
+
+<details>
+<summary>🇹🇷 Türkçe özet</summary>
+
+`unsni`, DPI tabanlı sansürü aşan tek binary, cross-platform bir Go aracıdır.
+Farkı: **otomatik strateji bulucu** ve **gerçek observability**.
+
+- `unsni find discord.com` — ISP'nde çalışan en hızlı desync stratejisini bulur.
+- `unsni doctor discord.com` — bir sitenin **neden** engelli olduğunu (SNI-block?
+  DNS poisoning?) teşhis eder.
+- `unsni run` — stratejiyi uygulayan yerel proxy'yi başlatır, `/metrics` ile ölçülür.
+
+**Kapsam:** Faz 1 userspace proxy'dir; HTTPS/TLS (TCP) trafiğini, yani site
+erişimini ve Discord **giriş + yazışma**sını çözer (Discord'u
+`--proxy-server=http://127.0.0.1:8080` ile başlat). **Discord sesli (UDP) henüz
+desteklenmiyor** — userspace proxy Discord'un doğrudan UDP trafiğini göremez. Ses,
+Faz 2'de (gömülü WireGuard tüneli / transparent capture) gelecek. Yanlış vaat yok.
+
+</details>
