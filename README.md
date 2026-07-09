@@ -1,83 +1,80 @@
 # unsni
 
-**English** · [Türkçe](README.tr.md)
+**Türkçe** · [English](README.en.md)
 
-> Cross-platform DPI bypass engine in Go — with an **automatic strategy finder**
-> and **real observability**. Neutralize SNI-based censorship (blocked sites,
-> Discord login/chat) without editing kernel rules by hand.
+> Go ile yazılmış cross-platform DPI bypass motoru. **Otomatik strateji bulucu**
+> ve **gerçek observability** ile. SNI tabanlı sansürü (engelli siteler, Discord
+> giriş/yazışma) elle kernel kuralı yazmadan aşar.
 
 [![CI](https://github.com/YusufDrymz/unsni/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufDrymz/unsni/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Why
+## Neden
 
-Most DPI-bypass tools (SpoofDPI, byedpi, zapret) either hard-code a single
-desync trick or make you run a cryptic `blockcheck` and copy-paste parameters
-by hand — with zero insight into *why* a site is blocked or *which* trick worked.
+Çoğu DPI bypass aracı (SpoofDPI, byedpi, zapret) ya tek bir desync numarasını
+sabit kullanır ya da sana kriptik bir `blockcheck` çalıştırıp parametreleri elle
+kopyalatır. Bir sitenin **neden** engelli olduğuna veya **hangi** numaranın
+işe yaradığına dair sıfır bilgi verir.
 
-`unsni` fills that gap:
+`unsni` tam bu boşluğu doldurur:
 
-- **`unsni find <host>`** probes the strategy space against your ISP and prints
-  the fastest working desync strategy — zero config.
-- **`unsni doctor <host>`** tells you *why* a connection fails (SNI-based block?
-  DNS poisoning?) and which strategy fixes it.
-- **`unsni run`** starts a local proxy that applies the strategy, with a
-  Prometheus `/metrics` endpoint for real monitoring.
+- **`unsni find <host>`** ISP'ne karşı strateji uzayını prob eder ve çalışan en
+  hızlı desync stratejisini basar. Sıfır konfig.
+- **`unsni doctor <host>`** bir bağlantının **neden** koptuğunu söyler (SNI-block mu?
+  DNS poisoning mi?) ve hangi stratejinin çözdüğünü gösterir.
+- **`unsni run`** stratejiyi uygulayan yerel bir proxy başlatır; Prometheus
+  `/metrics` ucuyla gerçek izleme.
 
-Pure Go, single binary, **no cgo**, cross-platform.
+Saf Go, tek binary, **cgo yok**, cross-platform.
 
-## Install
+## Kolay kurulum (terminal yok)
 
-```bash
-go install github.com/YusufDrymz/unsni/cmd/unsni@latest
-```
+1. [Releases](https://github.com/YusufDrymz/unsni/releases/latest) sayfasından
+   sistemine uygun dosyayı indir: `unsni_..._darwin_arm64.tar.gz` (Apple Silicon
+   Mac), `..._darwin_amd64` (Intel Mac), veya `..._windows_amd64.zip` (Windows).
+2. Çıkar. İçinde şunları görürsün:
 
-## Easy install (no terminal)
+   | dosya | ne |
+   |-------|-----|
+   | **`start-macos.command`** / **`start-windows.bat`** | **← çalıştırmak için BUNA çift tıkla** |
+   | `unsni` / `unsni.exe` | programın kendisi (çift tıklama; sadece yardım basar) |
+   | `README.md`, `docs/`, `LICENSE` | belgeler |
 
-1. Download the file for your system from
-   [Releases](https://github.com/YusufDrymz/unsni/releases/latest):
-   `unsni_..._darwin_arm64.tar.gz` (Apple Silicon Mac), `..._darwin_amd64` (Intel
-   Mac), or `..._windows_amd64.zip` (Windows).
-2. Unzip it. Inside you'll see:
+3. Sistemine uygun launcher'a çift tıkla. Sistem proxy'sini açar; Discord'u /
+   tarayıcını normal kullan. **İşin bitince pencereyi kapat**, ayarların otomatik
+   geri döner.
 
-   | file | what it is |
-   |------|------------|
-   | **`start-macos.command`** / **`start-windows.bat`** | **← double-click THIS to run** |
-   | `unsni` / `unsni.exe` | the program itself (don't double-click — it just prints help) |
-   | `README.md`, `docs/`, `LICENSE` | docs |
+> macOS ilk açılış: "geliştirici doğrulanamadı" derse launcher'a **sağ tık → Aç**
+> de (bir kez). Admin gerekmez.
 
-3. Double-click the launcher for your OS. It turns the system proxy on; open
-   Discord / your browser and use it normally. **Close the window when done** and
-   your settings revert automatically.
-
-> macOS first run: if it says "cannot verify developer", **right-click the
-> launcher → Open** once. It runs with no admin needed.
-
-## Quick start (CLI)
+## Hızlı başlangıç (CLI)
 
 ```bash
-# 1. Find a working strategy for a blocked host
+# 1. Engelli bir host için çalışan stratejiyi bul
 unsni find discord.com
-# -> best: record:sni (handshake in 84ms)
+# -> best: record:sni (handshake 84ms)
 
-# 2. Run the local proxy (HTTP CONNECT + optional SOCKS5, per-domain rules, auto-discovery)
+# 2. Yerel proxy'yi çalıştır (HTTP CONNECT + opsiyonel SOCKS5, per-domain rules, auto)
 unsni run --strategy record:sni --socks 127.0.0.1:1080 --rules rules.txt --auto
 
-# 3. Point your traffic at it. On macOS the system proxy is most reliable:
+# 3. Trafiği yönlendir. macOS'ta en güvenilir yol sistem proxy'si:
 #    networksetup -setsecurewebproxy "Wi-Fi" 127.0.0.1 8080
 #    networksetup -setwebproxy       "Wi-Fi" 127.0.0.1 8080
-#    (revert with ...state off when done — see docs/usage.md)
+#    (bitince ...state off ile geri al — bkz. docs/usage.tr.md)
 ```
 
-For **Discord voice (UDP)**, which no proxy can carry, generate a WireGuard/WARP tunnel:
+En kolayı `unsni run --system-proxy`: başlarken sistem proxy'sini kurar, Ctrl+C /
+pencere kapanınca otomatik geri alır.
+
+**Discord sesi (UDP)** için (hiçbir proxy taşıyamaz) WireGuard/WARP tüneli üret:
 
 ```bash
 unsni warp --out warp.conf && wg-quick up ./warp.conf
 ```
 
-Full guide: [`docs/usage.md`](docs/usage.md) · Türkçe: [`docs/usage.tr.md`](docs/usage.tr.md)
+Tam rehber: [`docs/usage.tr.md`](docs/usage.tr.md) · English: [`docs/usage.md`](docs/usage.md)
 
-Diagnose a block:
+Engeli teşhis et:
 
 ```bash
 unsni doctor discord.com
@@ -87,27 +84,27 @@ unsni doctor discord.com
 # seg:fixed:1         : FAILED
 ```
 
-## Strategies
+## Stratejiler
 
-`mode:at[:off]` — `mode` is `record` (RFC-compliant TLS record fragmentation) or
-`seg` (TCP segment split); `at` is `sni` (split inside the SNI hostname) or
-`fixed:<n>` (fixed payload offset).
+`mode:at[:off]` — `mode`: `record` (RFC uyumlu TLS record fragmentation) veya
+`seg` (TCP segment split); `at`: `sni` (SNI hostname içinde böl) veya
+`fixed:<n>` (sabit payload offset).
 
 ```bash
-unsni strategies   # list the built-ins
+unsni strategies   # yerleşikleri listele
 ```
 
-## Scope (read this)
+## Kapsam (oku)
 
-The **proxy** handles **HTTPS/TLS (TCP)** — website access and Discord
-**login + chat + gateway**. This is verified against real Turkish DPI.
+**Proxy**, **HTTPS/TLS (TCP)** trafiğini çözer — site erişimi ve Discord
+**giriş + yazışma + gateway**. Bu, gerçek Türkiye DPI'ına karşı doğrulandı.
 
-**Discord voice is UDP**, which a proxy cannot carry. For voice, `unsni warp`
-generates a WireGuard/WARP tunnel you run alongside the proxy — the proxy desyncs
-TCP, the tunnel carries UDP. A built-in transparent-capture tunnel (no external
-WireGuard) is future work. No false promises: voice needs the WARP tunnel running.
+**Discord sesi UDP'dir** ve proxy bunu taşıyamaz. Ses için `unsni warp` bir
+WireGuard/WARP tüneli üretir; proxy'yle birlikte çalıştırırsın (proxy TCP'yi
+desync eder, tünel UDP'yi taşır). Gömülü transparent-capture tüneli (harici
+WireGuard'sız) ileri iş. Yanlış vaat yok: ses için WARP tünelinin açık olması gerekir.
 
-## Development
+## Geliştirme
 
 ```bash
 make test    # go test -race ./...
@@ -115,6 +112,6 @@ make vet
 make cross   # cross-compile smoke check (linux/windows/darwin, cgo off)
 ```
 
-## License
+## Lisans
 
-MIT — see [LICENSE](LICENSE).
+MIT — bkz. [LICENSE](LICENSE).

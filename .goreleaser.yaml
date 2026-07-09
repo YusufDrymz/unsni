@@ -23,6 +23,7 @@ archives:
         formats: [zip]
     files:
       - README.md
+      - README.en.md
       - LICENSE
       - docs/*
       - start-macos.command
