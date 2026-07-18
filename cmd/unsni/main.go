@@ -118,17 +118,8 @@ func cmdRun(args []string) {
 		go func() { <-ctx.Done(); _ = srv.Close() }()
 	}
 
-	var revert func() error
-	if *systemProxy {
-		if *listen == "" {
-			fatal(fmt.Errorf("--system-proxy requires --listen"))
-		}
-		revert, err = sysproxy.Set(*listen)
-		if err != nil {
-			fatal(fmt.Errorf("system proxy: %w", err))
-		}
-		logger.Info("system proxy set", "addr", *listen)
-		fmt.Fprintf(os.Stderr, "System proxy is ON. Traffic routes through unsni.\nPress Ctrl+C to stop and restore your settings.\n")
+	if *systemProxy && *listen == "" {
+		fatal(fmt.Errorf("--system-proxy requires --listen"))
 	}
 
 	s := &proxy.Server{
@@ -142,7 +133,26 @@ func cmdRun(args []string) {
 		Logger:      logger,
 		Debug:       *debug,
 	}
-	serveErr := s.ListenAndServe(ctx)
+
+	// Bind the ports first, then enable the system proxy. Otherwise a bind
+	// failure (port already in use, firewall block) would leave the OS proxy
+	// pointing at a dead port and no site would open.
+	listeners, err := s.Listen()
+	if err != nil {
+		fatal(err)
+	}
+
+	var revert func() error
+	if *systemProxy {
+		revert, err = sysproxy.Set(*listen)
+		if err != nil {
+			fatal(fmt.Errorf("system proxy: %w", err))
+		}
+		logger.Info("system proxy set", "addr", *listen)
+		fmt.Fprintf(os.Stderr, "Sistem proxy'si AÇIK. Trafik unsni üzerinden gidiyor. Durdurmak ve ayarları geri almak için Ctrl+C.\nSystem proxy is ON. Traffic routes through unsni. Press Ctrl+C to stop and restore your settings.\n")
+	}
+
+	serveErr := s.Serve(ctx, listeners)
 
 	// Revert explicitly (a deferred call would be skipped by fatal's os.Exit).
 	if revert != nil {
@@ -251,7 +261,9 @@ func cmdTunnel(args []string) {
 	if err != nil {
 		fatal(err)
 	}
-	fmt.Fprintln(os.Stderr, "\nTunnel is UP — all traffic goes through WARP.")
+	fmt.Fprintln(os.Stderr, "\nTünel AÇIK — tüm trafik WARP üzerinden gidiyor.")
+	fmt.Fprintln(os.Stderr, "Discord'u aç (uygulama veya tarayıcı); ses de çalışır. Durdurmak için Ctrl+C (veya pencereyi kapat).")
+	fmt.Fprintln(os.Stderr, "Tunnel is UP — all traffic goes through WARP.")
 	fmt.Fprintln(os.Stderr, "Open Discord (desktop or browser); voice works too. Press Ctrl+C (or close this window) to stop.")
 
 	<-ctx.Done()

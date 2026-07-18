@@ -43,37 +43,66 @@ type cacheEntry struct {
 	strat desync.Strategy
 }
 
-// ListenAndServe serves the enabled front-ends until ctx is cancelled.
-func (s *Server) ListenAndServe(ctx context.Context) error {
+// boundListener is a front-end whose port is already bound and ready to accept.
+type boundListener struct {
+	ln     net.Listener
+	kind   string
+	handle func(context.Context, net.Conn)
+}
+
+// Listen binds every enabled front-end and returns the live listeners. Binding
+// up front (before Serve) lets callers enable the OS system proxy only once the
+// ports are actually accepting — otherwise a bind failure (e.g. port in use)
+// would leave the proxy pointing at a dead port. On any bind error, listeners
+// already opened are closed before returning.
+func (s *Server) Listen() ([]boundListener, error) {
 	if s.Timeout == 0 {
 		s.Timeout = 5 * time.Second
 	}
 	s.cache = map[string]cacheEntry{}
 
-	var listeners []struct {
+	var specs []struct {
 		addr, kind string
 		handle     func(context.Context, net.Conn)
 	}
 	if s.HTTPListen != "" {
-		listeners = append(listeners, struct {
+		specs = append(specs, struct {
 			addr, kind string
 			handle     func(context.Context, net.Conn)
 		}{s.HTTPListen, "http", s.handleHTTP})
 	}
 	if s.SocksListen != "" {
-		listeners = append(listeners, struct {
+		specs = append(specs, struct {
 			addr, kind string
 			handle     func(context.Context, net.Conn)
 		}{s.SocksListen, "socks5", s.handleSocks})
 	}
-	if len(listeners) == 0 {
-		return fmt.Errorf("no listeners configured (set --listen and/or --socks)")
+	if len(specs) == 0 {
+		return nil, fmt.Errorf("no listeners configured (set --listen and/or --socks)")
 	}
 
+	var bound []boundListener
+	var lc net.ListenConfig
+	for _, sp := range specs {
+		ln, err := lc.Listen(context.Background(), "tcp", sp.addr)
+		if err != nil {
+			for _, b := range bound {
+				_ = b.ln.Close()
+			}
+			return nil, fmt.Errorf("listen %s %s: %w", sp.kind, sp.addr, err)
+		}
+		s.Logger.Info("listening", "proto", sp.kind, "addr", sp.addr)
+		bound = append(bound, boundListener{ln: ln, kind: sp.kind, handle: sp.handle})
+	}
+	return bound, nil
+}
+
+// Serve accepts connections on the given listeners until ctx is cancelled.
+func (s *Server) Serve(ctx context.Context, listeners []boundListener) error {
 	errc := make(chan error, len(listeners))
 	for _, l := range listeners {
 		l := l
-		go func() { errc <- s.serve(ctx, l.addr, l.kind, l.handle) }()
+		go func() { errc <- s.accept(ctx, l) }()
 	}
 	for range listeners {
 		if err := <-errc; err != nil {
@@ -83,21 +112,24 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	return nil
 }
 
-func (s *Server) serve(ctx context.Context, addr, kind string, handle func(context.Context, net.Conn)) error {
-	var lc net.ListenConfig
-	ln, err := lc.Listen(ctx, "tcp", addr)
+// ListenAndServe binds the enabled front-ends and serves them until ctx is
+// cancelled. Prefer Listen + Serve when you need to act between bind and serve.
+func (s *Server) ListenAndServe(ctx context.Context) error {
+	listeners, err := s.Listen()
 	if err != nil {
 		return err
 	}
-	s.Logger.Info("listening", "proto", kind, "addr", addr)
+	return s.Serve(ctx, listeners)
+}
 
+func (s *Server) accept(ctx context.Context, l boundListener) error {
 	go func() {
 		<-ctx.Done()
-		_ = ln.Close()
+		_ = l.ln.Close()
 	}()
 
 	for {
-		c, err := ln.Accept()
+		c, err := l.ln.Accept()
 		if err != nil {
 			select {
 			case <-ctx.Done():
@@ -106,7 +138,7 @@ func (s *Server) serve(ctx context.Context, addr, kind string, handle func(conte
 				return err
 			}
 		}
-		go handle(ctx, c)
+		go l.handle(ctx, c)
 	}
 }
 
